@@ -7,7 +7,21 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+fastapi = "^0.112.2"
+uvicorn = {extras = ["standard"], version = "^0.30.6"}
+sqlalchemy = "^2.0.32"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.2"
+pydantic-settings = "^2.4.0"
+bcrypt = "^4.2.0"
+python-multipart = "^0.0.9"
+redis = "^5.0.8"
+pyjwt = "^2.9.0"
+fastapi-limiter = "^0.1.6"
 
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
 
 [build-system]
 requires = ["poetry-core"]
