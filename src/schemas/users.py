@@ -44,8 +44,8 @@ class UserOut(BaseModel):
     username: str
     email: EmailStr
     created_at: datetime
-    updated_at: datetime
-    is_active: bool
+    updated_at: datetime | None
+    is_confirmed: bool
 
     model_config = ConfigDict(from_attributes=True)
 

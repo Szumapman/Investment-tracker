@@ -44,7 +44,7 @@ class User(Base):
     password = Column(String(255), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    is_active = Column(Boolean, default=False)
+    is_confirmed = Column(Boolean, default=False)
 
     accounts = relationship("Account", backref="user", cascade="all, delete-orphan")
     refresh_tokens = relationship(
