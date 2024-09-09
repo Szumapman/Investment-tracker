@@ -2,9 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from src.routes import auth
-from src.config.constants import API_V1
-
-API = API_V1
+from src.config.constants import API
 
 app = FastAPI()
 
