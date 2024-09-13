@@ -29,10 +29,9 @@ class PostgresUserRepo(AbstractUserRepo):
         self.db.refresh(new_user)
         return new_user
 
-    async def confirm_user_email(self, email: str) -> User:
+    async def confirm_user_email(self, email: str) -> None:
         user = await self.get_user_by_email(email)
         if user:
             user.is_confirmed = True
             self.db.commit()
             self.db.refresh(user)
-        return user

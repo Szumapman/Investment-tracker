@@ -16,7 +16,9 @@ from fastapi.security import (
 from src.repositories.abstract import AbstractUserRepo
 from src.database.dependencies import get_user_repo
 from src.services.dependencies import get_password_handler, get_email_handler
+from src.services.auth import auth_service
 from src.schemas.users import UserIn, UserOut, UserInfo
+from src.schemas.email import RequestEmail
 from src.schemas.tokens import TokenOut
 from src.config.constants import AUTH
 
@@ -44,7 +46,6 @@ async def signup(
             detail="User with this username already exists",
         )
     user.password = await password_handler.hash_password(user.password)
-    print(len(user.password))
     user = await user_repo.create_user(user)
     background_tasks.add_task(
         email_service.send_confirmation_email,
@@ -56,3 +57,46 @@ async def signup(
         user=UserOut.model_validate(user),
         detail="User created successfully, please check your email to verify your account",
     )
+
+
+@router.get("/confirmed_email/{token}")
+async def confirmed_email(
+    token: str,
+    user_repo: AbstractUserRepo = Depends(get_user_repo),
+) -> dict[str, str]:
+    email = await auth_service.get_email_from_token(token)
+    user = await user_repo.get_user_by_email(email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification error",
+        )
+    if user.is_confirmed:
+        return {"message": "Your email is already confirmed"}
+    await user_repo.confirm_user_email(email)
+    return {"message": "Email confirmed"}
+
+
+@router.post("/request_email")
+async def request_email(
+    body: RequestEmail,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    user_repo: AbstractUserRepo = Depends(get_user_repo),
+    email_service=Depends(get_email_handler),
+) -> dict[str, str]:
+    user = await user_repo.get_user_by_email(body.email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification error",
+        )
+    if user.is_confirmed:
+        return {"message": "Your email is already confirmed"}
+    background_tasks.add_task(
+        email_service.send_confirmation_email,
+        user.email,
+        user.username,
+        request.base_url,
+    )
+    return {"message": "Check your email for confirmation."}

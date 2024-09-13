@@ -17,7 +17,7 @@ class FastApiEmailService(AbstractEmailService):
     Service for sending emails.
     """
 
-    EMAIL_CONFIRMATION_BASE_LINK_PART = f"{API}/auth/confirmed_email/"
+    EMAIL_CONFIRMATION_BASE_LINK_PART = f"{API[1:]}/auth/confirmed_email/"
 
     conf = ConnectionConfig(
         MAIL_USERNAME=settings.mail_username,
@@ -32,9 +32,6 @@ class FastApiEmailService(AbstractEmailService):
         VALIDATE_CERTS=False,
         TEMPLATE_FOLDER=Path(__file__).parent / "templates",
     )
-
-    # def __init__(self, auth_service: AbstractAuthService = get_auth_service()):
-    #     self.auth_service = auth_service
 
     async def send_confirmation_email(
         self, email: str, username: str, host: str
@@ -64,4 +61,4 @@ class FastApiEmailService(AbstractEmailService):
                 message, template_name="confirmation_email.html"
             )
         except ConnectionErrors as err:
-            print(err)  # ToDo: add log
+            print(err)  # TODO: add log
