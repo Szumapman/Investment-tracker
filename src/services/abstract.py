@@ -17,3 +17,9 @@ class AbstractEmailService(abc.ABC):
         self, email: str, username: str, host: str
     ) -> None:
         pass
+
+
+class AbstractAuthService(abc.ABC):
+    @abc.abstractmethod
+    async def create_email_token(self, data: dict) -> str:
+        pass

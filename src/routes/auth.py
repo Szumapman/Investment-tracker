@@ -18,8 +18,9 @@ from src.database.dependencies import get_user_repo
 from src.services.dependencies import get_password_handler, get_email_handler
 from src.schemas.users import UserIn, UserOut, UserInfo
 from src.schemas.tokens import TokenOut
+from src.config.constants import AUTH
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix=AUTH, tags=["auth"])
 security = HTTPBearer()
 
 
@@ -46,7 +47,10 @@ async def signup(
     print(len(user.password))
     user = await user_repo.create_user(user)
     background_tasks.add_task(
-        email_service.send_confirmation_email, user.email, request.base_url
+        email_service.send_confirmation_email,
+        user.email,
+        user.username,
+        request.base_url,
     )
     return UserInfo(
         user=UserOut.model_validate(user),

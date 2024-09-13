@@ -4,10 +4,12 @@ from fastapi_mail import FastMail, MessageSchema, MessageType, ConnectionConfig
 from fastapi_mail.errors import ConnectionErrors
 from pydantic import EmailStr
 
-from src.services.abstract import AbstractEmailService
+from src.services.abstract import AbstractEmailService, AbstractAuthService
+
+# from src.services.dependencies import get_auth_service
 from src.services.auth import auth_service
 from src.config.config import settings
-from src.config.constants import API
+from src.config.constants import API, EMAIL_TOKEN_HOURS_TO_EXPIRE
 
 
 class FastApiEmailService(AbstractEmailService):
@@ -31,6 +33,9 @@ class FastApiEmailService(AbstractEmailService):
         TEMPLATE_FOLDER=Path(__file__).parent / "templates",
     )
 
+    # def __init__(self, auth_service: AbstractAuthService = get_auth_service()):
+    #     self.auth_service = auth_service
+
     async def send_confirmation_email(
         self, email: str, username: str, host: str
     ) -> None:
@@ -43,17 +48,20 @@ class FastApiEmailService(AbstractEmailService):
             host (str): host to be displayed in the confirmation link in the email
         """
         try:
-            token_verification = auth_service.create_email_token({"sub": email})
+            token_verification = await auth_service.create_email_token({"sub": email})
             message = MessageSchema(
                 subject="Confirm your email ",
                 recipients=[email],
                 template_body={
                     "username": username,
                     "email_confirmaton_link": f"{host}{self.EMAIL_CONFIRMATION_BASE_LINK_PART}{token_verification}",
+                    "email_token_hours_to_expire": EMAIL_TOKEN_HOURS_TO_EXPIRE,
                 },
                 subtype=MessageType.html,
             )
             fast_mail = FastMail(self.conf)
-            await fast_mail.send_message(message, template_name="email_template.html")
+            await fast_mail.send_message(
+                message, template_name="confirmation_email.html"
+            )
         except ConnectionErrors as err:
             print(err)  # ToDo: add log

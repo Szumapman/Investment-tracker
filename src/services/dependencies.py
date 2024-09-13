@@ -1,4 +1,7 @@
-from src.services.abstract import AbstractPasswordHandler, AbstractEmailService
+from src.services.abstract import (
+    AbstractPasswordHandler,
+    AbstractEmailService,
+)
 from src.services.password import BcryptPasswordHandler
 from src.services.email import FastApiEmailService
 

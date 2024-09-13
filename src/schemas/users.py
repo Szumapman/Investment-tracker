@@ -17,7 +17,9 @@ class UserIn(BaseModel):
     )
     email: EmailStr = Field(max_length=150, default="user@example.com")
     password: str = Field(
-        min_length=MIN_PASSSWORD_LENGTH, max_length=MAX_PASSWORD_LENGTH
+        min_length=MIN_PASSSWORD_LENGTH,
+        max_length=MAX_PASSWORD_LENGTH,
+        default="password",
     )
 
     @field_validator("password")
