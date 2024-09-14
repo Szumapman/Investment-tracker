@@ -17,7 +17,7 @@ from src.repositories.abstract import AbstractUserRepo
 from src.database.dependencies import get_user_repo
 from src.services.dependencies import get_password_handler, get_email_handler
 from src.services.auth import auth_service
-from src.schemas.users import UserIn, UserOut, UserInfo
+from src.schemas.users import UserIn, UserOut, UserInfo, ResetPassword
 from src.schemas.email import RequestEmail
 from src.schemas.tokens import TokenOut
 from src.config.constants import AUTH
@@ -45,10 +45,11 @@ async def signup(
             status_code=status.HTTP_409_CONFLICT,
             detail="User with this username already exists",
         )
-    user.password = await password_handler.hash_password(user.password)
+    user.password = await password_handler.hash_password(user.password.password)
     user = await user_repo.create_user(user)
     background_tasks.add_task(
-        email_service.send_confirmation_email,
+        email_service.send_email,
+        "confirm",
         user.email,
         user.username,
         request.base_url,
@@ -94,9 +95,55 @@ async def request_email(
     if user.is_confirmed:
         return {"message": "Your email is already confirmed"}
     background_tasks.add_task(
-        email_service.send_confirmation_email,
+        email_service.send_email,
+        body.request_type,
         user.email,
         user.username,
         request.base_url,
     )
     return {"message": "Check your email for confirmation."}
+
+
+@router.post("/request_password_reset")
+async def request_password_reset(
+    body: RequestEmail,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    user_repo: AbstractUserRepo = Depends(get_user_repo),
+    email_service=Depends(get_email_handler),
+) -> dict[str, str]:
+    user = await user_repo.get_user_by_email(body.email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification error",
+        )
+    background_tasks.add_task(
+        email_service.send_email,
+        body.request_type,
+        user.email,
+        user.username,
+        request.base_url,
+    )
+    return {"message": "Check your email for a link to reset your password."}
+
+
+@router.post("/reset_password/{token}")
+async def reset_password(
+    token: str,
+    body: ResetPassword,
+    user_repo: AbstractUserRepo = Depends(get_user_repo),
+    password_handler=Depends(get_password_handler),
+) -> UserInfo:
+    email = await auth_service.get_email_from_token(token)
+    user = await user_repo.get_user_by_email(email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification error",
+        )
+    user.password = await password_handler.hash_password(body.password.password)
+    user = await user_repo.update_password(user)
+    return UserInfo(
+        user=UserOut.model_validate(user), detail="Password updated successfully"
+    )

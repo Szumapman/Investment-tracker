@@ -24,3 +24,7 @@ class AbstractUserRepo(abc.ABC):
     @abc.abstractmethod
     async def confirm_user_email(self, email: str) -> None:
         pass
+
+    @abc.abstractmethod
+    async def update_password(self, user: User) -> User:
+        pass

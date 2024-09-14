@@ -17,7 +17,7 @@ class FastApiEmailService(AbstractEmailService):
     Service for sending emails.
     """
 
-    EMAIL_CONFIRMATION_BASE_LINK_PART = f"{API[1:]}/auth/confirmed_email/"
+    EMAIL_BASE_LINK_PART = f"{API[1:]}/auth/"
 
     conf = ConnectionConfig(
         MAIL_USERNAME=settings.mail_username,
@@ -33,8 +33,8 @@ class FastApiEmailService(AbstractEmailService):
         TEMPLATE_FOLDER=Path(__file__).parent / "templates",
     )
 
-    async def send_confirmation_email(
-        self, email: str, username: str, host: str
+    async def send_email(
+        self, request_type: str, email: str, username: str, host: str
     ) -> None:
         """
         Sends email to the provided email address
@@ -46,19 +46,27 @@ class FastApiEmailService(AbstractEmailService):
         """
         try:
             token_verification = await auth_service.create_email_token({"sub": email})
+            if request_type == "confirm":
+                subject = "Confirm your email "
+                direction_link = "confirmed_email/"
+                template_name = "confirmation_email.html"
+            elif request_type == "reset_password":
+                subject = "Reset your password"
+                direction_link = "reset_password/"
+                template_name = "reset_password_email.html"
+            else:
+                raise ValueError("Invalid request type")
             message = MessageSchema(
-                subject="Confirm your email ",
+                subject=subject,
                 recipients=[email],
                 template_body={
                     "username": username,
-                    "email_confirmaton_link": f"{host}{self.EMAIL_CONFIRMATION_BASE_LINK_PART}{token_verification}",
+                    "email_confirmaton_link": f"{host}{self.EMAIL_BASE_LINK_PART}{direction_link}{token_verification}",
                     "email_token_hours_to_expire": EMAIL_TOKEN_HOURS_TO_EXPIRE,
                 },
                 subtype=MessageType.html,
             )
             fast_mail = FastMail(self.conf)
-            await fast_mail.send_message(
-                message, template_name="confirmation_email.html"
-            )
+            await fast_mail.send_message(message, template_name=template_name)
         except ConnectionErrors as err:
             print(err)  # TODO: add log

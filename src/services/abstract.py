@@ -13,9 +13,7 @@ class AbstractPasswordHandler(abc.ABC):
 
 class AbstractEmailService(abc.ABC):
     @abc.abstractmethod
-    async def send_confirmation_email(
-        self, email: str, username: str, host: str
-    ) -> None:
+    async def send_email(self, email: str, username: str, host: str) -> None:
         pass
 
 

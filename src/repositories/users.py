@@ -35,3 +35,11 @@ class PostgresUserRepo(AbstractUserRepo):
             user.is_confirmed = True
             self.db.commit()
             self.db.refresh(user)
+
+    async def update_password(self, user: User) -> User:
+        db_user = await self.get_user_by_email(user.email)
+        if db_user:
+            db_user.password = user.password
+        self.db.commit()
+        self.db.refresh(db_user)
+        return db_user
