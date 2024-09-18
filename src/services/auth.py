@@ -52,28 +52,42 @@ class AuthService(AbstractAuthService):
             key=user.email, value=user, expire=self.EXPIRE_IN_SECONDS
         )
 
+    async def __prepare_token_to_encode(self, data: dict, expires_delta: timedelta, scope: str) -> (dict, str):
+        to_encode = data.copy()
+        if scope == self.ACCESS_TOKEN:
+            to_encode.update({"session_id": str(uuid.uuid4())})
+        expire = datetime.now(timezone.utc) + expires_delta
+        to_encode.update(
+            {
+                "iat": datetime.now(timezone.utc),
+                "exp": expire,
+                "scope": scope,
+            }
+        )
+        print(**to_encode)
+        return to_encode
+
     async def create_access_token(
             self,
             data: dict,
             expires_delta: timedelta = timedelta(seconds=EXPIRE_IN_SECONDS),
     ) -> (str, str):
-        to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + expires_delta
-        session_id = str(uuid.uuid4())
-        to_encode.update(
-            {
-                "iat": datetime.utcnow(),
-                "exp": expire,
-                "session_id": session_id,
-                "scope": self.ACCESS_TOKEN,
-            }
-        )
+        to_encode = await self.__prepare_token_to_encode(data, expires_delta, self.ACCESS_TOKEN)
         encode_access_token = jwt.encode(
             to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM
         )
-        return encode_access_token, session_id
+        return encode_access_token, to_encode.get("session_id")
 
-
+    async def create_refresh_token(
+            self,
+            data: dict,
+            expires_delta: timedelta = timedelta(days=REFRESH_TOKEN_EXPIRE),
+    ) -> (str, datetime):
+        to_encode = await self.__prepare_token_to_encode(data, expires_delta, self.REFRESH_TOKEN)
+        encode_refresh_token = jwt.encode(
+            to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM
+        )
+        return encode_refresh_token, to_encode.get("exp")
 
 
 auth_service = AuthService()
