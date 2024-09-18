@@ -1,4 +1,7 @@
 import abc
+from datetime import timedelta
+
+from src.database.models import User
 
 
 class AbstractPasswordHandler(abc.ABC):
@@ -13,11 +16,23 @@ class AbstractPasswordHandler(abc.ABC):
 
 class AbstractEmailService(abc.ABC):
     @abc.abstractmethod
-    async def send_email(self, email: str, username: str, host: str) -> None:
+    async def send_email(self, request_type: str, email: str, username: str, host: str) -> None:
         pass
 
 
 class AbstractAuthService(abc.ABC):
     @abc.abstractmethod
     async def create_email_token(self, data: dict) -> str:
+        pass
+
+    @abc.abstractmethod
+    async def get_email_from_token(self, token: str) -> str:
+        pass
+
+    @abc.abstractmethod
+    async def update_user_in_cache(self, user: User) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def create_access_token(self, data: dict, expires_delta: timedelta) -> (str, str):
         pass
