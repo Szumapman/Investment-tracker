@@ -15,6 +15,19 @@ from src.config.constants import API, AUTH, EMAIL_TOKEN_HOURS_TO_EXPIRE
 
 
 class AuthService(AbstractAuthService):
+    """
+    AuthService class for authentication and authorization of users.
+
+    Attributes:
+        SECRET_KEY (str): secret key for JWT
+        ALGORITHM (str): algorithm for JWT
+        EXPIRE_IN_SECONDS (int): expiration time for JWT in seconds
+        REFRESH_TOKEN_EXPIRE (int): expiration time for refresh token in days
+        ACCESS_TOKEN (str): name of access token scope
+        REFRESH_TOKEN (str): name of refresh token scope
+        oauth2_scheme (OAuth2PasswordBearer): OAuth2PasswordBearer instance
+        cache (Cache): cache instance
+    """
 
     SECRET_KEY = settings.secret_key
     ALGORITHM = settings.algorithm
@@ -29,6 +42,15 @@ class AuthService(AbstractAuthService):
         self.cache = cache
 
     async def create_email_token(self, data: dict) -> str:
+        """
+        Create a token for link sending to user in email.
+
+        Args:
+            data (dict): data to encode
+
+        Returns:
+            str: token
+        """
         to_encode = data.copy()
         expire = datetime.now(timezone.utc) + timedelta(
             hours=EMAIL_TOKEN_HOURS_TO_EXPIRE
@@ -38,6 +60,18 @@ class AuthService(AbstractAuthService):
         return token
 
     async def get_email_from_token(self, token: str) -> str:
+        """
+        Get email from token.
+
+        Args:
+            token (str): token to decode
+
+        Returns:
+            str: email from token
+
+        Raises:
+            HTTPException: 422 if token is invalid
+        """
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             email = payload.get("sub")
@@ -50,6 +84,12 @@ class AuthService(AbstractAuthService):
             )
 
     async def update_user_in_cache(self, user: User) -> None:
+        """
+        Update user in cache.
+
+        Args:
+            user (User): user to update
+        """
         await self.cache.set_to_cache(
             key=user.email, value=user, expire=self.EXPIRE_IN_SECONDS
         )
@@ -57,6 +97,17 @@ class AuthService(AbstractAuthService):
     async def __prepare_token_to_encode(
         self, data: dict, expires_delta: timedelta, scope: str
     ) -> (dict, str):
+        """
+        Helper method to prepare token to encode.
+
+        Args:
+            data (dict): data to encode
+            expires_delta (timedelta): delta to expire token
+            scope (str): scope of token
+
+        Returns:
+           tuple (dict, str): token to encode and session id
+        """
         to_encode = data.copy()
         if scope == self.ACCESS_TOKEN:
             to_encode.update({"session_id": str(uuid.uuid4())})
@@ -76,6 +127,16 @@ class AuthService(AbstractAuthService):
         data: dict,
         expires_delta: timedelta = timedelta(seconds=EXPIRE_IN_SECONDS),
     ) -> (str, str):
+        """
+        Create access token.
+
+        Args:
+            data (dict): data to encode in token
+            expires_delta (timedelta): delta to expire token
+
+        Returns:
+            tuple (str, str): encoded access token, session id
+        """
         to_encode = await self.__prepare_token_to_encode(
             data, expires_delta, self.ACCESS_TOKEN
         )
@@ -89,6 +150,16 @@ class AuthService(AbstractAuthService):
         data: dict,
         expires_delta: timedelta = timedelta(days=REFRESH_TOKEN_EXPIRE),
     ) -> (str, datetime):
+        """
+        Create refresh token.
+
+        Args:
+            data (dict): data to encode in token
+            expires_delta (timedelta): delta to expire token
+
+        Returns:
+            tuple (str, datetime): encoded refresh token, expire date
+        """
         to_encode = await self.__prepare_token_to_encode(
             data, expires_delta, self.REFRESH_TOKEN
         )
@@ -98,6 +169,18 @@ class AuthService(AbstractAuthService):
         return encode_refresh_token, to_encode.get("exp")
 
     async def decode_refresh_token(self, token: str) -> str:
+        """
+        Decode refresh token.
+
+        Args:
+            token (str): refresh token to decode
+
+        Returns:
+            str: email of user
+
+        Raises:
+            HTTPException: 401 if token is invalid
+        """
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             if payload.get("scope") == self.REFRESH_TOKEN:
@@ -119,6 +202,19 @@ class AuthService(AbstractAuthService):
         token: str = Depends(oauth2_scheme),
         user_repo: AbstractUserRepo = Depends(get_user_repo),
     ) -> User:
+        """
+        Get current user from token.
+
+        Args:
+            token (str): token to decode and authenticate user
+            user_repo (AbstractUserRepo): user repository
+
+        Returns:
+            User: user object
+
+        Raises:
+            HTTPException: if token is invalid or user is not found
+        """
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -148,6 +244,19 @@ class AuthService(AbstractAuthService):
         return user
 
     async def get_session_id_from_token(self, token: str, user_email: str) -> str:
+        """
+        Get session id from token
+
+        Args:
+            token (str): token to decode
+            user_email (str): email of the user who performed the action
+
+        Returns:
+            str: session id from token
+
+        Raises:
+                HTTPException: if token is invalid or user email is not the same as the one in the token
+        """
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             if payload.get("scope") == self.ACCESS_TOKEN:
@@ -170,6 +279,15 @@ class AuthService(AbstractAuthService):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
             )
+
+    async def delete_user_from_cache(self, user_email: str) -> None:
+        """
+        Deletes user from cache.
+
+        Args:
+            user_email (str): user email
+        """
+        await self.cache.delete_from_cache(f"user:{user_email}")
 
 
 auth_service = AuthService()
