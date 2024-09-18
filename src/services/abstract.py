@@ -17,7 +17,9 @@ class AbstractPasswordHandler(abc.ABC):
 
 class AbstractEmailService(abc.ABC):
     @abc.abstractmethod
-    async def send_email(self, request_type: str, email: str, username: str, host: str) -> None:
+    async def send_email(
+        self, request_type: str, email: str, username: str, host: str
+    ) -> None:
         pass
 
 
@@ -35,11 +37,15 @@ class AbstractAuthService(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def create_access_token(self, data: dict, expires_delta: timedelta) -> (str, str):
+    async def create_access_token(
+        self, data: dict, expires_delta: timedelta
+    ) -> (str, str):
         pass
 
     @abc.abstractmethod
-    async def create_refresh_token(self, data: dict, expires_delta: timedelta) -> (str, str):
+    async def create_refresh_token(
+        self, data: dict, expires_delta: timedelta
+    ) -> (str, str):
         pass
 
     @abc.abstractmethod
@@ -48,4 +54,8 @@ class AbstractAuthService(abc.ABC):
 
     @abc.abstractmethod
     async def get_current_user(self, token: str, user_repo: AbstractUserRepo) -> User:
+        pass
+
+    @abc.abstractmethod
+    async def get_session_id_from_token(self, token: str, user_email: str) -> str:
         pass

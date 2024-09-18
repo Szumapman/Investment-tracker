@@ -147,5 +147,29 @@ class AuthService(AbstractAuthService):
         # TODO: check if the user has not been logged out
         return user
 
+    async def get_session_id_from_token(self, token: str, user_email: str) -> str:
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            if payload.get("scope") == self.ACCESS_TOKEN:
+                email = payload.get("sub")
+                session_id = payload.get("session_id")
+                if email != user_email or session_id is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Could not validate credentials",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                return session_id
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid scope for token",
+            )
+        except jwt.exceptions.PyJWTError as e:
+            print(e)  # TODO: log error
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+            )
+
 
 auth_service = AuthService()
