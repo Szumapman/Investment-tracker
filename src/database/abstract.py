@@ -3,7 +3,7 @@ import abc
 
 class AbstractCache(abc.ABC):
     @abc.abstractmethod
-    async def get_from_cache(self, key: str) -> object | None:
+    async def get_from_cache(self, key: str) -> bytes | None:
         pass
 
     @abc.abstractmethod

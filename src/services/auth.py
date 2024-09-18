@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import uuid
+import pickle
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -135,9 +136,15 @@ class AuthService(AbstractAuthService):
             print(e)  # TODO: log error
             raise credentials_exception
 
-        user = await user_repo.get_user_by_email(email)
+        user = await self.cache.get_from_cache(f"user:{email}")
         if user is None:
-            raise credentials_exception
+            user = await user_repo.get_user_by_email(email)
+            if user is None:
+                raise credentials_exception
+            await self.cache.set_to_cache(email, user, self.EXPIRE_IN_SECONDS)
+        else:
+            user = pickle.loads(user)
+        # TODO: check if the user has not been logged out
         return user
 
 

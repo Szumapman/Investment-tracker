@@ -15,7 +15,7 @@ class RedisCache(AbstractCache):
             db=0,
         )
 
-    async def get_from_cache(self, key: str) -> object | None:
+    async def get_from_cache(self, key: str) -> bytes | None:
         return await self.redis_connection.get(key)
 
     async def set_to_cache(self, key: str, value: object, expire: int) -> None:
