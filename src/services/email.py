@@ -40,6 +40,7 @@ class FastApiEmailService(AbstractEmailService):
         Sends email to the provided email address
 
         Args:
+            request_type (str): type of request to be sent (f.e.: confirmation or reset password)
             email (str): email address to send email
             username (str): username to be displayed in the email
             host (str): host to be displayed in the confirmation link in the email
