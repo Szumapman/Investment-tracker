@@ -40,3 +40,7 @@ class AbstractAuthService(abc.ABC):
     @abc.abstractmethod
     async def create_refresh_token(self, data: dict, expires_delta: timedelta) -> (str, str):
         pass
+
+    @abc.abstractmethod
+    async def decode_refresh_token(self, token: str) -> str:
+        pass

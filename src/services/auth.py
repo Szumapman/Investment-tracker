@@ -9,7 +9,7 @@ from src.config.config import settings
 from src.database.dependencies import get_cache
 from src.database.models import User
 from src.services.abstract import AbstractAuthService
-from src.config.constants import API, AUTH, EMAIL_TOKEN_HOURS_TO_EXPIRE
+from src.config.constants import API, AUTH, EMAIL_TOKEN_HOURS_TO_EXPIRE, INVALID_SCOPE, COULD_NOT_VALIDATE_CREDENTIALS
 
 
 class AuthService(AbstractAuthService):
@@ -88,6 +88,17 @@ class AuthService(AbstractAuthService):
             to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM
         )
         return encode_refresh_token, to_encode.get("exp")
+
+    async def decode_refresh_token(self, token: str) -> str:
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            if payload.get("scope") == self.REFRESH_TOKEN:
+                email = payload.get("sub")
+                return email
+            return INVALID_SCOPE
+        except jwt.exceptions.PyJWTError as e:
+            print(e)  # TODO: log error
+            return COULD_NOT_VALIDATE_CREDENTIALS
 
 
 auth_service = AuthService()
