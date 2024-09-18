@@ -2,6 +2,7 @@ import abc
 from datetime import timedelta
 
 from src.database.models import User
+from src.repositories.abstract import AbstractUserRepo
 
 
 class AbstractPasswordHandler(abc.ABC):
@@ -43,4 +44,8 @@ class AbstractAuthService(abc.ABC):
 
     @abc.abstractmethod
     async def decode_refresh_token(self, token: str) -> str:
+        pass
+
+    @abc.abstractmethod
+    async def get_current_user(self, token: str, user_repo: AbstractUserRepo) -> User:
         pass

@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta, timezone
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 
 from src.config.config import settings
-from src.database.dependencies import get_cache
+from src.repositories.abstract import AbstractUserRepo
+from src.database.dependencies import get_cache, get_user_repo
 from src.database.models import User
 from src.services.abstract import AbstractAuthService
-from src.config.constants import API, AUTH, EMAIL_TOKEN_HOURS_TO_EXPIRE, INVALID_SCOPE, COULD_NOT_VALIDATE_CREDENTIALS
+from src.config.constants import API, AUTH, EMAIL_TOKEN_HOURS_TO_EXPIRE
 
 
 class AuthService(AbstractAuthService):
@@ -52,7 +53,9 @@ class AuthService(AbstractAuthService):
             key=user.email, value=user, expire=self.EXPIRE_IN_SECONDS
         )
 
-    async def __prepare_token_to_encode(self, data: dict, expires_delta: timedelta, scope: str) -> (dict, str):
+    async def __prepare_token_to_encode(
+        self, data: dict, expires_delta: timedelta, scope: str
+    ) -> (dict, str):
         to_encode = data.copy()
         if scope == self.ACCESS_TOKEN:
             to_encode.update({"session_id": str(uuid.uuid4())})
@@ -68,22 +71,26 @@ class AuthService(AbstractAuthService):
         return to_encode
 
     async def create_access_token(
-            self,
-            data: dict,
-            expires_delta: timedelta = timedelta(seconds=EXPIRE_IN_SECONDS),
+        self,
+        data: dict,
+        expires_delta: timedelta = timedelta(seconds=EXPIRE_IN_SECONDS),
     ) -> (str, str):
-        to_encode = await self.__prepare_token_to_encode(data, expires_delta, self.ACCESS_TOKEN)
+        to_encode = await self.__prepare_token_to_encode(
+            data, expires_delta, self.ACCESS_TOKEN
+        )
         encode_access_token = jwt.encode(
             to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM
         )
         return encode_access_token, to_encode.get("session_id")
 
     async def create_refresh_token(
-            self,
-            data: dict,
-            expires_delta: timedelta = timedelta(days=REFRESH_TOKEN_EXPIRE),
+        self,
+        data: dict,
+        expires_delta: timedelta = timedelta(days=REFRESH_TOKEN_EXPIRE),
     ) -> (str, datetime):
-        to_encode = await self.__prepare_token_to_encode(data, expires_delta, self.REFRESH_TOKEN)
+        to_encode = await self.__prepare_token_to_encode(
+            data, expires_delta, self.REFRESH_TOKEN
+        )
         encode_refresh_token = jwt.encode(
             to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM
         )
@@ -95,10 +102,43 @@ class AuthService(AbstractAuthService):
             if payload.get("scope") == self.REFRESH_TOKEN:
                 email = payload.get("sub")
                 return email
-            return INVALID_SCOPE
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid scope for token",
+            )
         except jwt.exceptions.PyJWTError as e:
             print(e)  # TODO: log error
-            return COULD_NOT_VALIDATE_CREDENTIALS
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+            )
+
+    async def get_current_user(
+        self,
+        token: str = Depends(oauth2_scheme),
+        user_repo: AbstractUserRepo = Depends(get_user_repo),
+    ) -> User:
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            if payload.get("scope") == self.ACCESS_TOKEN:
+                email = payload.get("sub")
+                if email is None:
+                    raise credentials_exception
+            else:
+                raise credentials_exception
+        except jwt.exceptions.PyJWTError as e:
+            print(e)  # TODO: log error
+            raise credentials_exception
+
+        user = await user_repo.get_user_by_email(email)
+        if user is None:
+            raise credentials_exception
+        return user
 
 
 auth_service = AuthService()
