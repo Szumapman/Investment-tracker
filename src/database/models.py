@@ -42,8 +42,8 @@ class User(Base):
     username = Column(String(MAX_USERNAME_LENGTH), nullable=False, unique=True)
     email = Column(String(255), nullable=False, unique=True, index=True)
     password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     is_confirmed = Column(Boolean, default=False)
 
     accounts = relationship("Account", backref="user", cascade="all, delete-orphan")
@@ -74,7 +74,7 @@ class Account(Base):
     )
     balance_investable_funds = Column(Float, default=0.0)
     currency = Column(String(3), nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     transactions = relationship(
         "Transaction", backref="account", cascade="all, delete-orphan"
@@ -111,8 +111,8 @@ class Transaction(Base):
     type = Column(TRANSACTION_TYPE_ENUM, nullable=False)
     amount = Column(Float, nullable=False)
     note = Column(String(MAX_NOTE_LENGTH))
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Deposit(Base):
@@ -135,7 +135,7 @@ class Deposit(Base):
     )
     amount = Column(Float, nullable=False)
     interest_rate = Column(Float, nullable=False)
-    maturity_date = Column(DateTime, nullable=False)
+    maturity_date = Column(DateTime(timezone=True), nullable=False)
 
     transactions = relationship(
         "Transaction", backref="deposit", cascade="all, delete-orphan"
@@ -165,7 +165,7 @@ class Asset(Base):
         Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
     purchase_amount = Column(Float, nullable=False)
-    purchase_date = Column(DateTime, server_default=func.now())
+    purchase_date = Column(DateTime(timezone=True), server_default=func.now())
     purchase_share_price = Column(Float, nullable=False)
     share_quantity = Column(Float, nullable=False)
     current_share_quantity = Column(Float, nullable=False)
@@ -198,10 +198,10 @@ class CurrencyInvest(Base):
         Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
 
-    purchace_amount = Column(Float, nullable=False)
+    purchase_amount = Column(Float, nullable=False)
     currency = Column(String(3), nullable=False)
     purchase_exchange_rate = Column(Float, nullable=False)
-    purchase_date = Column(DateTime, server_default=func.now())
+    purchase_date = Column(DateTime(timezone=True), server_default=func.now())
     current_amount = Column(Float, nullable=False)
 
     transactions = relationship(
@@ -229,4 +229,4 @@ class RefreshToken(Base):
     )
     token = Column(String(350), nullable=False)
     session_id = Column(String(150), nullable=False, unique=True)
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
