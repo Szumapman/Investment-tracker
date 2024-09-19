@@ -13,14 +13,14 @@ from fastapi.security import (
     HTTPBearer,
 )
 
-from src.repositories.abstract import AbstractUserRepo
-from src.database.dependencies import get_user_repo
+from src.repositories.abstract import AbstractUserRepo, AbstractTokenRepo
+from src.database.dependencies import get_user_repo, get_token_repo
 from src.services.dependencies import get_password_handler, get_email_handler
 from src.services.auth import auth_service
 from src.schemas.users import UserIn, UserOut, UserInfo, ResetPassword
 from src.schemas.email import RequestEmail
 from src.schemas.tokens import TokenOut
-from src.config.constants import AUTH
+from src.config.constants import AUTH, MAX_ACTIVE_SESSIONS
 
 router = APIRouter(prefix=AUTH, tags=["auth"])
 security = HTTPBearer()
@@ -146,4 +146,46 @@ async def reset_password(
     user = await user_repo.update_password(user)
     return UserInfo(
         user=UserOut.model_validate(user), detail="Password updated successfully"
+    )
+
+
+@router.post("/login", response_model=TokenOut)
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_repo: AbstractUserRepo = Depends(get_user_repo),
+    token_repo: AbstractTokenRepo = Depends(get_token_repo),
+    password_handler=Depends(get_password_handler),
+) -> TokenOut:
+    user = await user_repo.get_user_by_email(form_data.username)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+    if not user.is_confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email not confirmed",
+        )
+    if not await password_handler.verify_password(form_data.password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+    access_token, session_id = await auth_service.create_access_token(
+        data={"sub": user.email}
+    )
+    refresh_token, expire = await auth_service.create_refresh_token(
+        data={"sub": user.email}
+    )
+    if not await token_repo.add_refresh_token(
+        refresh_token, user.id, session_id, expire
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Too many active sessions. User must not have more than {MAX_ACTIVE_SESSIONS} active sessions",
+        )
+    return TokenOut(
+        access_token=access_token,
+        refresh_token=refresh_token,
     )
