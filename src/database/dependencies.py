@@ -3,6 +3,8 @@ from redis.asyncio import Redis
 from src.database.db import get_db
 from src.repositories.abstract import AbstractUserRepo
 from src.repositories.users import PostgresUserRepo
+from src.repositories.abstract import AbstractTokenRepo
+from src.repositories.tokens import PostgresTokenRepo
 from src.database.abstract import AbstractCache
 from src.database.cache import RedisCache
 from src.config.config import settings
@@ -37,3 +39,7 @@ def get_cache() -> AbstractCache:
 
 def get_user_repo() -> AbstractUserRepo:
     return PostgresUserRepo(next(get_db()))
+
+
+def get_token_repo() -> AbstractTokenRepo:
+    return PostgresTokenRepo(next(get_db()))

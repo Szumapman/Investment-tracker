@@ -1,7 +1,9 @@
 import abc
+from datetime import datetime
 
 from src.database.models import User
 from src.schemas.users import UserIn
+from src.database.models import RefreshToken
 
 
 class AbstractUserRepo(abc.ABC):
@@ -27,4 +29,20 @@ class AbstractUserRepo(abc.ABC):
 
     @abc.abstractmethod
     async def update_password(self, user: User) -> User:
+        pass
+
+
+class AbstractTokenRepo(abc.ABC):
+    @abc.abstractmethod
+    async def add_refresh_token(
+        self, refresh_token: str, user_id: int, session_id: str, expires_at: datetime
+    ) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def get_refresh_token(self, refresh_token: str) -> RefreshToken | None:
+        pass
+
+    @abc.abstractmethod
+    async def remove_expired_refresh_tokens(self, user_id: int) -> None:
         pass
