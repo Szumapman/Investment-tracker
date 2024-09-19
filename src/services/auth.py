@@ -119,7 +119,6 @@ class AuthService(AbstractAuthService):
                 "scope": scope,
             }
         )
-        print(**to_encode)
         return to_encode
 
     async def create_access_token(
