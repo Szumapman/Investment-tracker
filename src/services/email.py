@@ -6,7 +6,6 @@ from pydantic import EmailStr
 
 from src.services.abstract import AbstractEmailService, AbstractAuthService
 
-# from src.services.dependencies import get_auth_service
 from src.services.auth import auth_service
 from src.config.config import settings
 from src.config.constants import API, EMAIL_TOKEN_HOURS_TO_EXPIRE
