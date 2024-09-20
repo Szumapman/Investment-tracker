@@ -44,7 +44,12 @@ class AbstractTokenRepo(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def delete_refresh_token(self, refresh_token: str) -> None:
+    async def delete_refresh_token(
+        self,
+        refresh_token: str = None,
+        user_id: int = None,
+        session_id: str = None,
+    ) -> None:
         pass
 
     @abc.abstractmethod

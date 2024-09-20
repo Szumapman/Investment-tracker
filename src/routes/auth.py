@@ -213,7 +213,23 @@ async def refresh_token(
     if not await token_repo.get_refresh_token(token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
+            detail="User logged out or invalid token",
         )
     await token_repo.delete_refresh_token(token)
     return await __set_tokens(user, token_repo)
+
+
+@router.post("/logout", response_model=UserInfo)
+async def logout(
+    current_user: User = Depends(auth_service.get_current_user),
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    token_repo: AbstractTokenRepo = Depends(get_token_repo),
+):
+    token = credentials.credentials
+    session_id = await auth_service.get_session_id_from_token(token, current_user.email)
+    await token_repo.delete_refresh_token(
+        user_id=current_user.id, session_id=session_id
+    )
+    await auth_service.delete_user_from_cache(current_user.email)
+    await auth_service.add_token_to_blacklist(token)
+    return UserInfo(user=current_user, detail="Logout successful")

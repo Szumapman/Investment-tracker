@@ -219,6 +219,8 @@ class AuthService(AbstractAuthService):
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+        if await self.cache.get_from_cache(token):
+            raise credentials_exception
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             if payload.get("scope") == self.ACCESS_TOKEN:
@@ -239,7 +241,6 @@ class AuthService(AbstractAuthService):
             await self.cache.set_to_cache(email, user, self.EXPIRE_IN_SECONDS)
         else:
             user = pickle.loads(user)
-        # TODO: check if the user has not been logged out
         return user
 
     async def get_session_id_from_token(self, token: str, user_email: str) -> str:
@@ -287,6 +288,15 @@ class AuthService(AbstractAuthService):
             user_email (str): user email
         """
         await self.cache.delete_from_cache(f"user:{user_email}")
+
+    async def add_token_to_blacklist(self, token: str) -> None:
+        """
+        Adds token to blacklist.
+
+        Args:
+            token: logout access token
+        """
+        await self.cache.set_to_cache(token, "blacklisted", self.EXPIRE_IN_SECONDS)
 
 
 auth_service = AuthService()

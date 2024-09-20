@@ -181,3 +181,13 @@ class AbstractAuthService(abc.ABC):
             user_email (str): email of user to delete
         """
         pass
+
+    @abc.abstractmethod
+    async def add_token_to_blacklist(self, token: str) -> None:
+        """
+        Method to add token to blacklist
+
+        Args:
+            token (str): token to add to blacklist
+        """
+        pass
