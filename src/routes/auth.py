@@ -21,9 +21,30 @@ from src.schemas.users import UserIn, UserOut, UserInfo, ResetPassword
 from src.schemas.email import RequestEmail
 from src.schemas.tokens import TokenOut
 from src.config.constants import AUTH, MAX_ACTIVE_SESSIONS
+from src.database.models import User
 
 router = APIRouter(prefix=AUTH, tags=["auth"])
 security = HTTPBearer()
+
+
+async def __set_tokens(user: User, token_repo: AbstractTokenRepo) -> TokenOut:
+    access_token, session_id = await auth_service.create_access_token(
+        data={"sub": user.email}
+    )
+    refresh_token, expire = await auth_service.create_refresh_token(
+        data={"sub": user.email}
+    )
+    if not await token_repo.add_refresh_token(
+        refresh_token, user.id, session_id, expire
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Too many active sessions. User must not have more than {MAX_ACTIVE_SESSIONS} active sessions",
+        )
+    return TokenOut(
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
 
 
 @router.post("/signup", response_model=UserInfo, status_code=status.HTTP_201_CREATED)
@@ -172,20 +193,27 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    access_token, session_id = await auth_service.create_access_token(
-        data={"sub": user.email}
-    )
-    refresh_token, expire = await auth_service.create_refresh_token(
-        data={"sub": user.email}
-    )
-    if not await token_repo.add_refresh_token(
-        refresh_token, user.id, session_id, expire
-    ):
+    return await __set_tokens(user, token_repo)
+
+
+@router.get("/refresh_token", response_model=TokenOut)
+async def refresh_token(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    user_repo: AbstractUserRepo = Depends(get_user_repo),
+    token_repo: AbstractTokenRepo = Depends(get_token_repo),
+):
+    token = credentials.credentials
+    email = await auth_service.get_email_from_token(token)
+    user = await user_repo.get_user_by_email(email)
+    if user is None:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Too many active sessions. User must not have more than {MAX_ACTIVE_SESSIONS} active sessions",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
         )
-    return TokenOut(
-        access_token=access_token,
-        refresh_token=refresh_token,
-    )
+    if not await token_repo.get_refresh_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+    await token_repo.delete_refresh_token(token)
+    return await __set_tokens(user, token_repo)

@@ -18,7 +18,7 @@ class PostgresTokenRepo(AbstractTokenRepo):
         )
         if (
             len(user_logged_sessions) >= MAX_ACTIVE_SESSIONS
-        ):  # user can have limited number of sessions
+        ):  # because user can have limited number of sessions
             return False
         new_refresh_token = RefreshToken(
             token=refresh_token,
@@ -36,6 +36,10 @@ class PostgresTokenRepo(AbstractTokenRepo):
             .filter(RefreshToken.token == refresh_token)
             .first()
         )
+
+    async def delete_refresh_token(self, refresh_token: str) -> None:
+        self.db.query(RefreshToken).filter(RefreshToken.token == refresh_token).delete()
+        self.db.commit()
 
     async def remove_expired_refresh_tokens(self, user_id: int) -> None:
         self.db.query(RefreshToken).filter(
