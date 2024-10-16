@@ -182,7 +182,7 @@ class CurrencyInvest(Base):
     Attributes:
         id (int): primary key
         account_id (int): foreign key to the accounts table
-        purchace_amount (float): amount of the purchase in the currency of the investment
+        purchase_amount (float): amount of the purchase in the currency of the investment
         currency (str): currency of the investment
         purchase_exchange_rate (float): exchange rate of the purchase
         purchase_date (DateTime): date and time when the investment was purchased
