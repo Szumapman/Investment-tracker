@@ -1,9 +1,9 @@
 import abc
 from datetime import datetime
 
-from src.database.models import User
+from src.database.models import User, RefreshToken, Account
 from src.schemas.users import UserIn
-from src.database.models import RefreshToken
+from src.schemas.accounts import AccountIn
 
 
 class AbstractUserRepo(abc.ABC):
@@ -54,4 +54,14 @@ class AbstractTokenRepo(abc.ABC):
 
     @abc.abstractmethod
     async def remove_expired_refresh_tokens(self, user_id: int) -> None:
+        pass
+
+
+class AbstractAccountRepo(abc.ABC):
+    @abc.abstractmethod
+    async def get_accounts(self, user_id: int) -> list[Account]:
+        pass
+    
+    @abc.abstractmethod
+    async def create_account(self, user_id: int, account_in: AccountIn) -> Account:
         pass
