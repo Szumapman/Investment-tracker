@@ -3,6 +3,7 @@ from sqlalchemy import Enum
 API_V1 = "/api/v1"
 API = API_V1
 AUTH = "/auth"
+ACCOUNTS = "/accounts"
 
 MIN_USERNAME_LENGTH = 3
 MAX_USERNAME_LENGTH = 255
