@@ -72,7 +72,7 @@ class Account(Base):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    balance_investable_funds = Column(Float, default=0.0)
+    balance_investable_funds = Column(Float, default=0.00)
     currency = Column(String(3), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
