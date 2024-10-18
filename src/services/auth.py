@@ -96,7 +96,7 @@ class AuthService(AbstractAuthService):
 
     async def __prepare_token_to_encode(
         self, data: dict, expires_delta: timedelta, scope: str
-    ) -> (dict, str):
+    ) -> dict:
         """
         Helper method to prepare token to encode.
 
@@ -125,7 +125,7 @@ class AuthService(AbstractAuthService):
         self,
         data: dict,
         expires_delta: timedelta = timedelta(seconds=EXPIRE_IN_SECONDS),
-    ) -> (str, str):
+    ) -> tuple[str, str]:
         """
         Create access token.
 
@@ -148,7 +148,7 @@ class AuthService(AbstractAuthService):
         self,
         data: dict,
         expires_delta: timedelta = timedelta(days=REFRESH_TOKEN_EXPIRE),
-    ) -> (str, datetime):
+    ) -> tuple[str, datetime]:
         """
         Create refresh token.
 
