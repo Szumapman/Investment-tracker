@@ -32,3 +32,9 @@ class PostgresAccountRepo(AbstractAccountRepo):
         self.db.commit()
         self.db.refresh(account)
         return account
+    
+    async def delete_account(self, account_id: int) -> Account:
+        account = self.db.query(Account).filter(Account.id == account_id).first()
+        self.db.delete(account)
+        self.db.commit()
+        return account

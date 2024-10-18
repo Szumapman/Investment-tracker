@@ -59,3 +59,14 @@ async def withdraw_funds(amount_funds: AccountFunds, account_id: int, current_us
     account = await account_repo.update_funds(account_id, -amount_funds.balance_investable_funds)
     return AccountInfo(account=AccountOut.model_validate(account), detail=f"Withdrawn funds in the amount of {amount_funds.balance_investable_funds} {account.currency} from the account")
     
+@router.delete("/{account_id}", response_model=AccountInfo)
+async def delete_account(account_id: int, current_user: User = Depends(auth_service.get_current_user), account_repo: AbstractAccountRepo = Depends(get_account_repo)) -> AccountInfo:
+    account = await __get_account(account_id, account_repo)
+    __check_authorization(account.user_id, current_user.id)
+    if account.balance_investable_funds != 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account has funds, please withdraw them before deleting the account",
+        )
+    account = await account_repo.delete_account(account_id)
+    return AccountInfo(account=AccountOut.model_validate(account), detail="Account deleted successfully")

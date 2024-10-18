@@ -73,3 +73,7 @@ class AbstractAccountRepo(abc.ABC):
     @abc.abstractmethod
     async def update_funds(self, account_id: int, amount: float) -> Account:
         pass
+    
+    @abc.abstractmethod
+    async def delete_account(self, account_id: int) -> None:
+        pass
