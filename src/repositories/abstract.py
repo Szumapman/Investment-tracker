@@ -59,9 +59,17 @@ class AbstractTokenRepo(abc.ABC):
 
 class AbstractAccountRepo(abc.ABC):
     @abc.abstractmethod
+    async def get_account_by_id(self, account_id: int) -> Account:
+        pass
+    
+    @abc.abstractmethod
     async def get_accounts(self, user_id: int) -> list[Account]:
         pass
     
     @abc.abstractmethod
     async def create_account(self, user_id: int, account_in: AccountIn) -> Account:
+        pass
+    
+    @abc.abstractmethod
+    async def update_funds(self, account_id: int, amount: float) -> Account:
         pass
