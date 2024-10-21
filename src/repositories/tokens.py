@@ -36,6 +36,13 @@ class PostgresTokenRepo(AbstractTokenRepo):
             .filter(RefreshToken.token == refresh_token)
             .first()
         )
+        
+    async def get_refresh_tokens(self, user_id: int) -> list[RefreshToken]:
+        return (
+            self.db.query(RefreshToken)
+            .filter(RefreshToken.user_id == user_id)
+            .all()
+        )
 
     async def delete_refresh_token(
         self, refresh_token: str = None, user_id: int = None, session_id: str = None
@@ -45,9 +52,12 @@ class PostgresTokenRepo(AbstractTokenRepo):
                 RefreshToken.token == refresh_token
             ).delete()
         elif user_id and session_id:
-            self.db.query(RefreshToken).filter(
+            tokens_to_delete = self.db.query(RefreshToken).filter(
                 RefreshToken.user_id == user_id, RefreshToken.session_id == session_id
-            ).delete()
+            ).all()
+            if tokens_to_delete:
+                for token in tokens_to_delete:
+                    self.db.delete(token)
         else:
             raise ValueError(
                 "Either refresh_token or user_id and session_id must be provided"

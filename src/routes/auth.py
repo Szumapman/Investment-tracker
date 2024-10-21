@@ -12,6 +12,7 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
+import httpagentparser
 
 from src.repositories.abstract import AbstractUserRepo, AbstractTokenRepo
 from src.database.dependencies import get_user_repo, get_token_repo
@@ -27,9 +28,9 @@ router = APIRouter(prefix=AUTH, tags=["auth"])
 security = HTTPBearer()
 
 
-async def __set_tokens(user: User, token_repo: AbstractTokenRepo) -> TokenOut:
-    access_token, session_id = await auth_service.create_access_token(
-        data={"sub": user.email}
+async def __set_tokens(user: User, session_id: str, token_repo: AbstractTokenRepo) -> TokenOut:
+    access_token = await auth_service.create_access_token(
+        data={"sub": user.email}, session_id=session_id
     )
     refresh_token, expire = await auth_service.create_refresh_token(
         data={"sub": user.email}
@@ -172,6 +173,7 @@ async def reset_password(
 
 @router.post("/login", response_model=TokenOut)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_repo: AbstractUserRepo = Depends(get_user_repo),
     token_repo: AbstractTokenRepo = Depends(get_token_repo),
@@ -193,11 +195,14 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    return await __set_tokens(user, token_repo)
+    parsed_user_agent = str(httpagentparser.detect(request.headers.get('user-agent')))
+    await token_repo.delete_refresh_token(user_id=user.id, session_id=parsed_user_agent)
+    return await __set_tokens(user, parsed_user_agent, token_repo)
 
 
 @router.get("/refresh_token", response_model=TokenOut)
 async def refresh_token(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Security(security),
     user_repo: AbstractUserRepo = Depends(get_user_repo),
     token_repo: AbstractTokenRepo = Depends(get_token_repo),
@@ -216,7 +221,8 @@ async def refresh_token(
             detail="User logged out or invalid token",
         )
     await token_repo.delete_refresh_token(token)
-    return await __set_tokens(user, token_repo)
+    parsed_user_agent = str(httpagentparser.detect(request.headers.get('user-agent')))
+    return await __set_tokens(user, parsed_user_agent, token_repo)
 
 
 @router.post("/logout", response_model=UserInfo)

@@ -42,13 +42,17 @@ class AbstractTokenRepo(abc.ABC):
     @abc.abstractmethod
     async def get_refresh_token(self, refresh_token: str) -> RefreshToken | None:
         pass
+    
+    @abc.abstractmethod
+    async def get_refresh_tokens(self, user_id: int) -> list[RefreshToken]:
+        pass
 
     @abc.abstractmethod
     async def delete_refresh_token(
         self,
         refresh_token: str = None,
         user_id: int = None,
-        session_id: str = None,
+        session_id: dict = None,
     ) -> None:
         pass
 

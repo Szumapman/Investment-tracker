@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Boolean,
     func,
+    JSON,
 )
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -217,7 +218,7 @@ class RefreshToken(Base):
         id (int): primary key
         user_id (int): foreign key to the users table
         token (str): refresh token
-        session_id (str): session id
+        session_id (JSON): session id
         expires_at (DateTime): expiration date of the refresh token
     """
 
@@ -228,5 +229,5 @@ class RefreshToken(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     token = Column(String(350), nullable=False)
-    session_id = Column(String(150), nullable=False, unique=True)
+    session_id = Column(String(350), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)

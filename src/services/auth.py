@@ -95,7 +95,7 @@ class AuthService(AbstractAuthService):
         )
 
     async def __prepare_token_to_encode(
-        self, data: dict, expires_delta: timedelta, scope: str
+        self, data: dict, expires_delta: timedelta, scope: str, session_id: str = None
     ) -> dict:
         """
         Helper method to prepare token to encode.
@@ -108,9 +108,10 @@ class AuthService(AbstractAuthService):
         Returns:
            tuple (dict, str): token to encode and session id
         """
+        
         to_encode = data.copy()
         if scope == self.ACCESS_TOKEN:
-            to_encode.update({"session_id": str(uuid.uuid4())})
+            to_encode.update({"session_id": session_id})
         expire = datetime.now(timezone.utc) + expires_delta
         to_encode.update(
             {
@@ -124,25 +125,27 @@ class AuthService(AbstractAuthService):
     async def create_access_token(
         self,
         data: dict,
+        session_id: str,
         expires_delta: timedelta = timedelta(seconds=EXPIRE_IN_SECONDS),
-    ) -> tuple[str, str]:
+    ) -> str:
         """
         Create access token.
 
         Args:
             data (dict): data to encode in token
+            session_id (str): session id
             expires_delta (timedelta): delta to expire token
 
         Returns:
-            tuple (str, str): encoded access token, session id
+            access_token (str): encoded access token
         """
         to_encode = await self.__prepare_token_to_encode(
-            data, expires_delta, self.ACCESS_TOKEN
+            data, expires_delta, self.ACCESS_TOKEN, session_id
         )
         encode_access_token = jwt.encode(
             to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM
         )
-        return encode_access_token, to_encode.get("session_id")
+        return encode_access_token
 
     async def create_refresh_token(
         self,
@@ -219,7 +222,7 @@ class AuthService(AbstractAuthService):
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        if await self.cache.get_from_cache(token):
+        if await self.cache.get_from_cache(token): # check if token is in blacklisted (logout)
             raise credentials_exception
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
