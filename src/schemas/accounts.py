@@ -27,6 +27,8 @@ class AccountOut(BaseModel):
     balance_investable_funds: float
     currency: CurrencyEnum
     created_at: datetime
+    # TODO add transactions 
+    # transactions: list[TransactionOut] | None = None 
     
     model_config = ConfigDict(from_attributes=True)
     

@@ -40,6 +40,17 @@ async def create_account(account_info: AccountIn, current_user: User = Depends(a
     new_account = await account_repo.create_account(current_user.id, account_info)
     return AccountInfo(account=AccountOut.model_validate(new_account), detail="Account created successfully")
 
+@router.get("/", response_model=list[AccountOut])
+async def get_accounts(current_user: User = Depends(auth_service.get_current_user), account_repo: AbstractAccountRepo = Depends(get_account_repo)) -> list[AccountOut]:
+    accounts = await account_repo.get_accounts(current_user.id)
+    return [AccountOut.model_validate(account) for account in accounts]
+
+@router.get("/{account_id}", response_model=AccountOut)
+async def get_account(account_id: int, current_user: User = Depends(auth_service.get_current_user), account_repo: AbstractAccountRepo = Depends(get_account_repo)) -> AccountOut:
+    account = await __get_account(account_id, account_repo)
+    __check_authorization(account.user_id, current_user.id)
+    return AccountOut.model_validate(account)
+
 @router.post("/{account_id}/deposit", response_model=AccountInfo)
 async def deposit_funds(amount_funds: AccountFunds, account_id: int, current_user: User = Depends(auth_service.get_current_user), account_repo: AbstractAccountRepo = Depends(get_account_repo)) -> AccountInfo:
     account = await __get_account(account_id, account_repo)
