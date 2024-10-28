@@ -4,7 +4,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class DepositIn(BaseModel):
-    amount: float
     interest_rate: float
     maturity_date: datetime
 
