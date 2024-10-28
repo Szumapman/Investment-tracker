@@ -134,7 +134,6 @@ class Deposit(Base):
     account_id = Column(
         Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
-    amount = Column(Float, nullable=False)
     interest_rate = Column(Float, nullable=False)
     maturity_date = Column(DateTime(timezone=True), nullable=False)
 
@@ -199,7 +198,6 @@ class CurrencyInvest(Base):
         Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
 
-    purchase_amount = Column(Float, nullable=False)
     currency = Column(String(3), nullable=False)
     purchase_exchange_rate = Column(Float, nullable=False)
     purchase_date = Column(DateTime(timezone=True), server_default=func.now())
