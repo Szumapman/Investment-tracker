@@ -165,6 +165,7 @@ class Asset(Base):
     account_id = Column(
         Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
+    asset_name = Column(String(10), nullable=False)
     purchase_amount = Column(Float, nullable=False)
     purchase_date = Column(DateTime(timezone=True), server_default=func.now())
     purchase_share_price = Column(Float, nullable=False)
