@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DepositIn(BaseModel):
@@ -12,6 +12,8 @@ class DepositIn(BaseModel):
 class DepositOut(DepositIn):
     id: int
     account_id: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DepositInfo(BaseModel):
