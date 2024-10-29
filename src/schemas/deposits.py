@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from src.schemas.transactions import TransactionOut
+
 
 class DepositIn(BaseModel):
     interest_rate: float
@@ -11,6 +13,7 @@ class DepositIn(BaseModel):
 class DepositOut(DepositIn):
     id: int
     account_id: int
+    transactions: list[TransactionOut]
 
     model_config = ConfigDict(from_attributes=True)
 
