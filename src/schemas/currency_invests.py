@@ -15,7 +15,6 @@ class CurrencyInvestToBuy(CurrencyInvestIn):
 
 class CurrencyInvestOut(CurrencyInvestToBuy):
     id: int
-    account_id: int
     purchase_date: datetime
     current_amount: float
     transactions: list[TransactionOut]
