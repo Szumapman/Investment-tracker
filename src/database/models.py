@@ -122,7 +122,6 @@ class Deposit(Base):
 
     Attributes:
         id (int): primary key
-        account_id (int): foreign key to the accounts table
         amount (float): amount of the deposit
         interest_rate (float): interest rate of the deposit
         maturity_date (DateTime): maturity date of the deposit
@@ -131,9 +130,6 @@ class Deposit(Base):
     __tablename__ = "deposits"
 
     id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(
-        Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
-    )
     interest_rate = Column(Float, nullable=False)
     maturity_date = Column(DateTime(timezone=True), nullable=False)
 
@@ -148,7 +144,6 @@ class Asset(Base):
 
     Attributes:
         id (int): primary key
-        account_id (int): foreign key to the accounts table
         purchase_amount (float): amount of the purchase
         purchase_date (DateTime): date and time when the asset was purchased
         purchase_share_price (float): purchase share price of the asset
@@ -161,9 +156,6 @@ class Asset(Base):
     __tablename__ = "assets"
 
     id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(
-        Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
-    )
     asset_name = Column(String(10), nullable=False)
     purchase_date = Column(DateTime(timezone=True), server_default=func.now())
     purchase_share_price = Column(Float, nullable=False)
@@ -181,9 +173,7 @@ class CurrencyInvest(Base):
 
     Attributes:
         id (int): primary key
-        account_id (int): foreign key to the accounts table
         purchase_amount (float): amount of the purchase in the currency of the investment
-        currency (str): currency of the investment
         purchase_exchange_rate (float): exchange rate of the purchase
         purchase_date (DateTime): date and time when the investment was purchased
         current_amount (float): current amount of the investment in the currency of the investment
@@ -194,10 +184,6 @@ class CurrencyInvest(Base):
     __tablename__ = "currency_invests"
 
     id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(
-        Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
-    )
-
     currency = Column(String(3), nullable=False)
     purchase_exchange_rate = Column(Float, nullable=False)
     purchase_date = Column(DateTime(timezone=True), server_default=func.now())
