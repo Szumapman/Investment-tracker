@@ -1,10 +1,16 @@
 from redis.asyncio import Redis
 
 from src.database.db import get_db
-from src.repositories.abstract import AbstractUserRepo, AbstractTokenRepo, AbstractAccountRepo
+from src.repositories.abstract import (
+    AbstractUserRepo,
+    AbstractTokenRepo,
+    AbstractAccountRepo,
+    AbstractCurrencyInvestRepo,
+)
 from src.repositories.users import PostgresUserRepo
 from src.repositories.tokens import PostgresTokenRepo
 from src.repositories.accounts import PostgresAccountRepo
+from src.repositories.currency_invests import PostgresCurrencyInvestRepo
 from src.database.abstract import AbstractCache
 from src.database.cache import RedisCache
 from src.config.config import settings
@@ -44,5 +50,10 @@ def get_user_repo() -> AbstractUserRepo:
 def get_token_repo() -> AbstractTokenRepo:
     return PostgresTokenRepo(next(get_db()))
 
+
 def get_account_repo() -> AbstractAccountRepo:
     return PostgresAccountRepo(next(get_db()))
+
+
+def get_currency_invest_repo() -> AbstractCurrencyInvestRepo:
+    return PostgresCurrencyInvestRepo(next(get_db()))
